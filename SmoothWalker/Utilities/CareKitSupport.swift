@@ -8,6 +8,22 @@ A collection of utility functions used for charting and visualizations.
 import Foundation
 import CareKitUI
 
+enum ChartType: CaseIterable {
+    case daily
+    case weekly
+    case monthly
+    case quarterly
+    
+    var rawValue: String {
+        switch self {
+        case .daily: return Constants.daily
+        case .weekly: return Constants.weekly
+        case .monthly: return Constants.monthly
+        case .quarterly: return Constants.quarterly
+        }
+    }
+}
+
 // MARK: - Chart Date UI
 
 /// Return a label describing the date range of the chart for the last week. Example: "Jun 3 - Jun 10, 2020"
@@ -15,7 +31,7 @@ func createChartWeeklyDateRangeLabel(lastDate: Date = Date()) -> String {
     let calendar: Calendar = .current
     
     let endOfWeekDate = lastDate
-    let startOfWeekDate = getLastWeekStartDate(from: endOfWeekDate)
+    let startOfWeekDate = getStartDate(from: endOfWeekDate)
     
     let monthDayDateFormatter = DateFormatter()
     monthDayDateFormatter.dateFormat = "MMM d"
@@ -60,33 +76,43 @@ func createChartDateLastUpdatedLabel(_ dateLastUpdated: Date) -> String {
 /// Returns an array of horizontal axis markers based on the desired time frame, where the last axis marker corresponds to `lastDate`
 /// `useWeekdays` will use short day abbreviations (e.g. "Sun, "Mon", "Tue") instead.
 /// Defaults to showing the current day as the last axis label of the chart and going back one week.
-func createHorizontalAxisMarkers(lastDate: Date = Date(), useWeekdays: Bool = true) -> [String] {
-    let calendar: Calendar = .current
-    let weekdayTitles = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    
-    var titles: [String] = []
-    
-    if useWeekdays {
-        titles = weekdayTitles
-        
-        let weekday = calendar.component(.weekday, from: lastDate)
-        
-        return Array(titles[weekday..<titles.count]) + Array(titles[0..<weekday])
-    } else {
-        let numberOfTitles = weekdayTitles.count
-        let endDate = lastDate
-        let startDate = calendar.date(byAdding: DateComponents(day: -(numberOfTitles - 1)), to: endDate)!
-        
-        let dateFormatter = createMonthDayDateFormatter()
 
-        var date = startDate
-        
-        while date <= endDate {
-            titles.append(dateFormatter.string(from: date))
-            date = calendar.date(byAdding: .day, value: 1, to: date)!
+private func titles(for chartType: ChartType) -> [String] {
+    switch chartType {
+    case .daily:
+        return Constants.hours
+    case .weekly:
+        return Constants.daysShort
+    case .monthly:
+        return Constants.months
+    case .quarterly:
+        return Constants.quarters
+    }
+}
+
+func createHorizontalAxisMarkers(chartType: ChartType = .weekly, lastDate: Date = Date()) -> [String] {
+    let calendar: Calendar = .current
+    let titles = titles(for: chartType)
+    
+    switch chartType {
+    case .daily:
+        let hour = calendar.component(.hour, from: lastDate)
+        var indexOfHour = 0
+        if titles.contains("\(hour)")  {
+            indexOfHour = titles.firstIndex(of: "\(hour)")!
+        } else if  titles.contains("\(hour + 1)") {
+            indexOfHour = titles.firstIndex(of: "\(hour + 1)")!
         }
-        
-        return titles
+        return Array(titles[indexOfHour..<titles.count]) + Array(titles[0..<indexOfHour])
+    case .weekly:
+        let weekday = calendar.component(.weekday, from: lastDate)
+        return Array(titles[weekday..<titles.count]) + Array(titles[0..<weekday])
+    case .monthly:
+        let month = calendar.component(.month, from: lastDate)
+        return Array(titles[month..<titles.count]) + Array(titles[0..<month])
+    case .quarterly:
+        let quarter = calendar.component(.quarter, from: lastDate) + 1
+        return Array(titles[quarter..<titles.count]) + Array(titles[0..<quarter])
     }
 }
 

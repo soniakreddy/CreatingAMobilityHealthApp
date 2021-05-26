@@ -9,16 +9,18 @@ import UIKit
 import CareKitUI
 import HealthKit
 
-private extension CGFloat {
-    static let inset: CGFloat = 20
-    static let itemSpacing: CGFloat = 12
-    static let itemSpacingWithTitle: CGFloat = 0
+protocol ChartTableViewControllerDelegate: ChartTableViewController {
+    func didSelectChartType(_ chartType: ChartType)
 }
 
 /// A `DataTableViewController` with a chart header view.
 class ChartTableViewController: DataTableViewController {
     
+    weak var chartViewDelegate: ChartTableViewControllerDelegate?
+    
     // MARK: - UI Properties
+    
+    private var titles = [ChartType.daily.rawValue, ChartType.weekly.rawValue, ChartType.monthly.rawValue]
     
     lazy var headerView: UIView = {
         let view = UIView()
@@ -27,7 +29,22 @@ class ChartTableViewController: DataTableViewController {
         
         return view
     }()
-        
+    
+    private lazy var segmentedControl: UISegmentedControl = {
+        let segmentedControl = UISegmentedControl(items: [ChartType.daily.rawValue, ChartType.weekly.rawValue, ChartType.monthly.rawValue])
+        segmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        segmentedControl.accessibilityIdentifier = "segmentedControl"
+        segmentedControl.selectedSegmentIndex = 1
+        segmentedControl.clipsToBounds = true
+        segmentedControl.backgroundColor = .clear
+        segmentedControl.selectedSegmentTintColor = Constants.tealColor
+        segmentedControl.layer.masksToBounds = true
+        segmentedControl.setTitleTextAttributes([.foregroundColor: Constants.mossGreenColor, .font: UIFont.systemFont(ofSize: .regularFontSize, weight: .regular)], for: .normal)
+        segmentedControl.setTitleTextAttributes([.foregroundColor: Constants.mossGreenColor, .font: UIFont.systemFont(ofSize: .regularFontSize, weight: .semibold)], for: .selected)
+        segmentedControl.addTarget(self, action: #selector(segmentedControlDidChange(_:)), for: .valueChanged)
+        return segmentedControl
+    }()
+    
     lazy var chartView: OCKCartesianChartView = {
         let chartView = OCKCartesianChartView(type: .bar)
         
@@ -37,7 +54,22 @@ class ChartTableViewController: DataTableViewController {
         return chartView
     }()
     
+    @objc private func segmentedControlDidChange(_ sender: UISegmentedControl) {
+        if segmentedControl.selectedSegmentIndex == 0 {
+            chartViewDelegate?.didSelectChartType(.daily)
+        } else if segmentedControl.selectedSegmentIndex == 1 {
+            chartViewDelegate?.didSelectChartType(.weekly)
+        } else if segmentedControl.selectedSegmentIndex == 2 {
+            chartViewDelegate?.didSelectChartType(UIDevice.current.orientation.isLandscape ? .monthly : .quarterly)
+        }
+        
+    }
+    
     // MARK: - View Life Cycle Overrides
+    
+    override func viewDidLayoutSubviews() {
+        segmentedControl.layer.cornerRadius = segmentedControl.bounds.height / 2
+    }
     
     override func updateViewConstraints() {
         chartViewBottomConstraint?.constant = showGroupedTableViewTitle ? .itemSpacingWithTitle : .itemSpacing
@@ -49,8 +81,7 @@ class ChartTableViewController: DataTableViewController {
         super.setUpViewController()
         
         setUpHeaderView()
-        setUpConstraints()
-    }
+        setUpConstraints()    }
     
     override func setUpTableView() {
         super.setUpTableView()
@@ -59,9 +90,8 @@ class ChartTableViewController: DataTableViewController {
     }
     
     private func setUpHeaderView() {
+        headerView.addSubview(segmentedControl)
         headerView.addSubview(chartView)
-        
-        // headerView.addSubview(testLabel)
         tableView.tableHeaderView = headerView
     }
 
@@ -69,6 +99,7 @@ class ChartTableViewController: DataTableViewController {
         var constraints: [NSLayoutConstraint] = []
         
         constraints += createHeaderViewConstraints()
+        constraints += createSegmentedControlConstraints()
         constraints += createChartViewConstraints()
         
         NSLayoutConstraint.activate(constraints)
@@ -83,10 +114,19 @@ class ChartTableViewController: DataTableViewController {
         return [leading, trailing, top, centerX]
     }
     
+    private func createSegmentedControlConstraints() -> [NSLayoutConstraint] {
+        let leading = segmentedControl.leadingAnchor.constraint(equalTo: chartView.leadingAnchor)
+        let trailing = segmentedControl.trailingAnchor.constraint(equalTo: chartView.trailingAnchor)
+        let top = segmentedControl.topAnchor.constraint(equalTo: headerView.topAnchor)
+        let bottom = segmentedControl.bottomAnchor.constraint(equalTo: chartView.topAnchor, constant: -.itemSpacing)
+        
+        return [leading, trailing, top, bottom]
+        
+    }
+    
     private var chartViewBottomConstraint: NSLayoutConstraint?
     private func createChartViewConstraints() -> [NSLayoutConstraint] {
         let leading = chartView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor)
-        let top = chartView.topAnchor.constraint(equalTo: headerView.topAnchor)
         let trailing = chartView.trailingAnchor.constraint(equalTo: headerView.trailingAnchor)
         let bottomConstant: CGFloat = showGroupedTableViewTitle ? .itemSpacingWithTitle : .itemSpacing
         let bottom = chartView.bottomAnchor.constraint(equalTo: headerView.bottomAnchor, constant: -bottomConstant)
@@ -96,6 +136,6 @@ class ChartTableViewController: DataTableViewController {
         trailing.priority -= 1
         bottom.priority -= 1
 
-        return [leading, top, trailing, bottom]
+        return [leading, trailing, bottom]
     }
 }

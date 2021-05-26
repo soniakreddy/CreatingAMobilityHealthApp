@@ -84,9 +84,10 @@ class DataTypeCollectionViewCell: UICollectionViewCell {
         else {
             return
         }
+        let series = OCKDataSeries(values: dataPoints, title: unitTitle, gradientStartColor: Constants.purpleDarkColor, gradientEndColor: Constants.purpleLightColor)
         
         chartView.graphView.dataSeries = [
-            OCKDataSeries(values: dataPoints, title: unitTitle)
+            series
         ]
     }
 }

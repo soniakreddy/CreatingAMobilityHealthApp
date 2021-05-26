@@ -14,6 +14,7 @@ class MobilityChartDataViewController: DataTypeCollectionViewController {
     let calendar: Calendar = .current
     
     var mobilityContent: [String] = [
+        HKQuantityTypeIdentifier.walkingSpeed.rawValue,
         HKQuantityTypeIdentifier.stepCount.rawValue,
         HKQuantityTypeIdentifier.distanceWalkingRunning.rawValue
     ]
@@ -24,6 +25,8 @@ class MobilityChartDataViewController: DataTypeCollectionViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        setUpViewController()
         
         data = mobilityContent.map { ($0, []) }
     }
@@ -40,6 +43,14 @@ class MobilityChartDataViewController: DataTypeCollectionViewController {
                 self.loadData()
             }
         }
+    }
+    
+    
+    // MARK: - View Helper Functions
+    
+    private func setUpViewController() {
+        view.backgroundColor = Constants.purpleColor
+        collectionView.backgroundColor = Constants.purpleColor
     }
     
     // MARK: - Data Functions
@@ -61,7 +72,7 @@ class MobilityChartDataViewController: DataTypeCollectionViewController {
     
     func createAnchoredObjectQuery(for sampleType: HKSampleType) {
         // Customize query parameters
-        let predicate = createLastWeekPredicate()
+        let predicate = createLastDateComponentPredicate()
         let limit = HKObjectQueryNoLimit
         
         // Fetch anchor persisted in memory
@@ -115,21 +126,19 @@ class MobilityChartDataViewController: DataTypeCollectionViewController {
         // Create a query for each data type.
         for (index, item) in data.enumerated() {
             // Set dates
-            let now = Date()
-            let startDate = getLastWeekStartDate()
-            let endDate = now
+            let startDate = getStartDate()
             
-            let predicate = createLastWeekPredicate()
+            let predicate = createLastDateComponentPredicate()
             let dateInterval = DateComponents(day: 1)
             
             // Process data.
             let statisticsOptions = getStatisticsOptions(for: item.dataTypeIdentifier)
             let initialResultsHandler: (HKStatisticsCollection) -> Void = { (statisticsCollection) in
                 var values: [Double] = []
-                statisticsCollection.enumerateStatistics(from: startDate, to: endDate) { (statistics, stop) in
+                statisticsCollection.enumerateStatistics(from: startDate, to: Constants.today) { (statistics, stop) in
                     let statisticsQuantity = getStatisticsQuantity(for: statistics, with: statisticsOptions)
                     if let unit = preferredUnit(for: item.dataTypeIdentifier),
-                        let value = statisticsQuantity?.doubleValue(for: unit) {
+                       let value = statisticsQuantity?.doubleValue(for: unit) {
                         values.append(value)
                     }
                 }

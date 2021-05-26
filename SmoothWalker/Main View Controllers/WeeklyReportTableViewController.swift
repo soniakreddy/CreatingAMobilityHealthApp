@@ -8,18 +8,20 @@ A table view controller that displays a chart and table view with health data sa
 import UIKit
 import HealthKit
 
-class WeeklyReportTableViewController: HealthQueryTableViewController {
-    
+class WeeklyReportTableViewController: HealthQueryTableViewController, ChartTableViewControllerDelegate, HealthQueryTableViewControllerDelegate {
     /// The date from the latest server response.
     private var dateLastUpdated: Date?
+    private var currentChartType: ChartType = .weekly
     
     // MARK: Initializers
     
     init() {
-        super.init(dataTypeIdentifier: HKQuantityTypeIdentifier.sixMinuteWalkTestDistance.rawValue)
+        super.init(dataTypeIdentifier: HKQuantityTypeIdentifier.walkingSpeed.rawValue)
         
         // Set weekly predicate
-        queryPredicate = createLastWeekPredicate()
+        queryPredicate = createLastDateComponentPredicate(chartType: currentChartType)
+        chartViewDelegate = self
+        healthQueryDelegate = self
     }
     
     required init?(coder: NSCoder) {
@@ -34,11 +36,36 @@ class WeeklyReportTableViewController: HealthQueryTableViewController {
         // Authorization
         if !dataValues.isEmpty { return }
         
+        fetchData()
+    }
+    
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        reloadData()
+    }
+    
+    // MARK: - View Helper Functions
+    
+    private func fetchData() {
+        queryPredicate = createLastDateComponentPredicate(chartType: currentChartType)
         HealthData.requestHealthDataAccessIfNeeded(dataTypes: [dataTypeIdentifier]) { (success) in
             if success {
                 // Perform the query and reload the data.
-                self.loadData()
+                self.loadData(chartType: self.currentChartType)
             }
+        }
+    }
+    
+    private func reloadDataBasedOnOrientation(chartType: ChartType) {
+        if chartType == .monthly || chartType == .quarterly {
+            self.chartView.graphView.horizontalAxisMarkers = createHorizontalAxisMarkers(chartType: UIDevice.current.orientation.isLandscape ? .monthly : .quarterly)
+            currentChartType = UIDevice.current.orientation.isLandscape ? .monthly : .quarterly
+        } else {
+            self.chartView.graphView.horizontalAxisMarkers = createHorizontalAxisMarkers(chartType: chartType)
+            currentChartType = chartType
+        }
+        
+        if let dateLastUpdated = self.dateLastUpdated {
+            self.chartView.headerView.detailLabel.text = createChartDateLastUpdatedLabel(dateLastUpdated)
         }
     }
     
@@ -47,10 +74,26 @@ class WeeklyReportTableViewController: HealthQueryTableViewController {
     @objc
     override func didTapFetchButton() {
         Network.pull() { [weak self] (serverResponse) in
-            self?.dateLastUpdated = serverResponse.date
-            self?.queryPredicate = createLastWeekPredicate(from: serverResponse.date)
-            self?.handleServerResponse(serverResponse)
+            guard let self = self else { return }
+            self.dateLastUpdated = serverResponse.date
+            self.queryPredicate = createLastDateComponentPredicate(from: serverResponse.date, chartType: self.currentChartType)
+            self.handleServerResponse(serverResponse)
         }
+    }
+    
+    func didSelectChartTypeAction(dataTypeIdentifier: String) {
+        HealthData.requestHealthDataAccessIfNeeded(dataTypes: [dataTypeIdentifier]) { (success) in
+            if success {
+                // Perform the query and reload the data.
+                self.loadData(chartType: self.currentChartType)
+            }
+        }
+    }
+    
+    func didSelectChartType(_ chartType: ChartType) {
+        currentChartType = chartType
+        fetchData()
+        reloadDataBasedOnOrientation(chartType: currentChartType)
     }
     
     // MARK: - Network
@@ -81,7 +124,7 @@ class WeeklyReportTableViewController: HealthQueryTableViewController {
         
         HealthData.healthStore.save(addedSamples) { (success, error) in
             if success {
-                self.loadData()
+                self.loadData(chartType: self.currentChartType)
             }
         }
     }
@@ -93,11 +136,7 @@ class WeeklyReportTableViewController: HealthQueryTableViewController {
         
         // Change axis to use weekdays for six-minute walk sample
         DispatchQueue.main.async {
-            self.chartView.graphView.horizontalAxisMarkers = createHorizontalAxisMarkers()
-            
-            if let dateLastUpdated = self.dateLastUpdated {
-                self.chartView.headerView.detailLabel.text = createChartDateLastUpdatedLabel(dateLastUpdated)
-            }
+            self.reloadDataBasedOnOrientation(chartType: self.currentChartType)
         }
     }
 }

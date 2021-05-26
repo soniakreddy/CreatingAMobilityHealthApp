@@ -43,7 +43,7 @@ class WeeklyQuantitySampleTableViewController: HealthDataTableViewController, He
     }
     
     func calculateDailyQuantitySamplesForPastWeek() {
-        performQuery {
+        performQuery(chartType: .weekly) {
             DispatchQueue.main.async { [weak self] in
                 self?.reloadData()
             }
@@ -52,27 +52,23 @@ class WeeklyQuantitySampleTableViewController: HealthDataTableViewController, He
     
     // MARK: - HealthQueryDataSource
     
-    func performQuery(completion: @escaping () -> Void) {
-        let predicate = createLastWeekPredicate()
+    func performQuery(chartType: ChartType, completion: @escaping () -> Void) {
+        let predicate = createLastDateComponentPredicate(chartType: chartType)
         let anchorDate = createAnchorDate()
         let dailyInterval = DateComponents(day: 1)
         let statisticsOptions = getStatisticsOptions(for: dataTypeIdentifier)
-
+        
         let query = HKStatisticsCollectionQuery(quantityType: quantityType,
-                                                 quantitySamplePredicate: predicate,
-                                                 options: statisticsOptions,
-                                                 anchorDate: anchorDate,
-                                                 intervalComponents: dailyInterval)
+                                                quantitySamplePredicate: predicate,
+                                                options: statisticsOptions,
+                                                anchorDate: anchorDate,
+                                                intervalComponents: dailyInterval)
         
         // The handler block for the HKStatisticsCollection object.
         let updateInterfaceWithStatistics: (HKStatisticsCollection) -> Void = { statisticsCollection in
             self.dataValues = []
             
-            let now = Date()
-            let startDate = getLastWeekStartDate()
-            let endDate = now
-            
-            statisticsCollection.enumerateStatistics(from: startDate, to: endDate) { [weak self] (statistics, stop) in
+            statisticsCollection.enumerateStatistics(from: getStartDate(), to: Constants.today) { [weak self] (statistics, stop) in
                 var dataValue = HealthDataTypeValue(startDate: statistics.startDate,
                                                     endDate: statistics.endDate,
                                                     value: 0)
@@ -114,4 +110,3 @@ class WeeklyQuantitySampleTableViewController: HealthDataTableViewController, He
         }
     }
 }
-

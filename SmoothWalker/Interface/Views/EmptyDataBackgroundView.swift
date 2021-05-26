@@ -7,23 +7,16 @@ A view used for the background of table views when there is no data.
 
 import UIKit
 
-private extension CGFloat {
-    static let horizontalInset: CGFloat = 60
-}
-
 /// A view with a centered label to communicate there is no data available.
 class EmptyDataBackgroundView: UIView {
     
-    var labelText: String!
-    
-    init(message: String) {
-        self.labelText = message
+    init(displayImage: Bool) {
+        imageView.isHidden = displayImage
         
         super.init(frame: .zero)
         
         setupViews()
         
-        label.text = message
     }
     
     required init?(coder: NSCoder) {
@@ -31,21 +24,17 @@ class EmptyDataBackgroundView: UIView {
     }
     
     func setupViews() {
-        addSubview(label)
+        addSubview(imageView)
         
         addConstraints()
     }
     
-    var label: UILabel = {
-        let label = UILabel()
+    var imageView: UIImageView =  {
+        let imageView = UIImageView(image: UIImage(named: Constants.emptyDataIllustration))
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.isHidden = true
         
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textColor = .secondaryLabel
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 22, weight: .regular)
-        label.numberOfLines = 0
-        
-        return label
+        return imageView
     }()
     
     func addConstraints() {
@@ -58,10 +47,8 @@ class EmptyDataBackgroundView: UIView {
     
     func addLabelConstraints() -> [NSLayoutConstraint] {
         return [
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: .horizontalInset),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -.horizontalInset),
-            label.topAnchor.constraint(equalTo: topAnchor),
-            label.bottomAnchor.constraint(equalTo: bottomAnchor)
+            imageView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -.horizontalInset),
+            imageView.centerXAnchor.constraint(equalTo: centerXAnchor)
         ]
     }
 }

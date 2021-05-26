@@ -43,12 +43,9 @@ class DataTypeCollectionViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setupNavigationController()
+        setUpNavigationController()
+        setUpViewController()
         setUpViews()
-        
-        title = tabBarItem.title
-        view.backgroundColor = .systemBackground
-        collectionView.backgroundColor = .systemBackground
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -63,8 +60,15 @@ class DataTypeCollectionViewController: UIViewController {
     
     // MARK: - View Helper Functions
     
-    private func setupNavigationController() {
+    private func setUpNavigationController() {
         navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : Constants.mossGreenColor]
+    }
+    
+    private func setUpViewController() {
+        title = tabBarItem.title
+        view.backgroundColor = .white
+        collectionView.backgroundColor = .white
     }
     
     private func setUpViews() {

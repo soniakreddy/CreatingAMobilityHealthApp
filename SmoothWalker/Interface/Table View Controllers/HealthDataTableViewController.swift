@@ -26,13 +26,13 @@ class HealthDataTableViewController: DataTableViewController {
         super.setUpNavigationController()
         
         // The data type selection ("More") bar button item.
-        let leftBarButtonItem = UIBarButtonItem(title: "More", style: .plain, target: self,
-                                                action: #selector(didTapLeftBarButtonItem))
+        let leftBarButtonItem = UIBarButtonItem(image: UIImage.image(from: Constants.menu), style: .plain, target: self, action: #selector(didTapLeftBarButtonItem))
+        leftBarButtonItem.tintColor = Constants.mossGreenColor
         navigationItem.leftBarButtonItem = leftBarButtonItem
         
         // The Add Data bar button item.
-        let rightBarButtonItem = UIBarButtonItem(title: "Add Data", style: .plain, target: self,
-                                                 action: #selector(didTapRightBarButtonItem))
+        let rightBarButtonItem = UIBarButtonItem(image: UIImage.image(from: Constants.addMore), style: .plain, target: self, action: #selector(didTapRightBarButtonItem))
+        rightBarButtonItem.tintColor = Constants.mossGreenColor
         navigationItem.rightBarButtonItem = rightBarButtonItem
     }
     
@@ -63,17 +63,20 @@ class HealthDataTableViewController: DataTableViewController {
             textField.placeholder = title
         }
         
-        let cancelAction = UIAlertAction(title: "Cancel", style: .cancel)
-        alertController.addAction(cancelAction)
+        let cancel = UIAlertAction(title: Constants.cancel, style: .cancel)
+        cancel.setValue(Constants.mintGreenColor, forKey: Constants.titleKey)
         
-        let confirmAction = UIAlertAction(title: "Add", style: .default) { [weak self, weak alertController] _ in
+        alertController.addAction(cancel)
+        
+        let confirmAction = UIAlertAction(title: Constants.add, style: .default) { [weak self, weak alertController] _ in
             guard let alertController = alertController, let textField = alertController.textFields?.first else { return }
             
             if let string = textField.text, let doubleValue = Double(string) {
                 self?.didAddNewData(with: doubleValue)
+                self?.reloadData()
             }
         }
-        
+        confirmAction.setValue(UIColor.label, forKey: Constants.titleKey)
         alertController.addAction(confirmAction)
         
         present(alertController, animated: true)
@@ -90,11 +93,13 @@ class HealthDataTableViewController: DataTableViewController {
             let action = UIAlertAction(title: actionTitle, style: .default) { [weak self] (action) in
                 self?.didSelectDataTypeIdentifier(dataType.identifier)
             }
+            action.setValue(UIColor.label, forKey: Constants.titleKey)
             
             alertController.addAction(action)
         }
         
-        let cancel = UIAlertAction(title: "Cancel", style: .cancel)
+        let cancel = UIAlertAction(title: Constants.cancel, style: .cancel)
+        cancel.setValue(Constants.mintGreenColor, forKey: Constants.titleKey)
         
         alertController.addAction(cancel)
         
@@ -111,7 +116,7 @@ class HealthDataTableViewController: DataTableViewController {
                 }
                 
                 if let healthQueryDataSourceProvider = self as? HealthQueryDataSource {
-                    healthQueryDataSourceProvider.performQuery() { [weak self] in
+                    healthQueryDataSourceProvider.performQuery(chartType: .weekly) { [weak self] in
                         DispatchQueue.main.async {
                             self?.reloadData()
                         }
@@ -139,11 +144,19 @@ extension HealthDataTableViewController: HealthDataTableViewControllerDelegate {
             }
             if success {
                 print("Successfully saved a new sample!", sample)
-                DispatchQueue.main.async { [weak self] in
-                    self?.reloadData()
-                }
+                self?.refresh()
             } else {
                 print("Error: Could not save new sample.", sample)
+            }
+        }
+    }
+    
+    private func refresh() {
+        if let healthQueryDataSourceProvider = self as? HealthQueryDataSource {
+            healthQueryDataSourceProvider.performQuery(chartType: .weekly) { [weak self] in
+                DispatchQueue.main.async {
+                    self?.reloadData()
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ import UIKit
 /// A protocol for a class that manages a HealthKit query.
 protocol HealthQueryDataSource: AnyObject {
     /// Create and execute a query on a health store. Note: The completion handler returns on a background thread.
-    func performQuery(completion: @escaping () -> Void)
+    func performQuery(chartType: ChartType, completion: @escaping () -> Void)
 }
 
 class DataTableViewController: UITableViewController {
@@ -21,6 +21,7 @@ class DataTableViewController: UITableViewController {
     
     var dataTypeIdentifier: String
     var dataValues: [HealthDataTypeValue] = []
+    var averageDataValues: [HealthDataTypeValue] = []
     
     public var showGroupedTableViewTitle: Bool = false
     
@@ -44,8 +45,11 @@ class DataTableViewController: UITableViewController {
         setUpTableView()
     }
     
+    // MARK: - View Helper Functions
+    
     func setUpNavigationController() {
         navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : Constants.mossGreenColor]
     }
     
     func setUpViewController() {
@@ -54,11 +58,12 @@ class DataTableViewController: UITableViewController {
     }
     
     func setUpTableView() {
+        tableView.backgroundColor = Constants.greenColor
         tableView.register(DataTypeTableViewCell.self, forCellReuseIdentifier: Self.cellIdentifier)
     }
     
     private var emptyDataView: EmptyDataBackgroundView {
-        return EmptyDataBackgroundView(message: "No Data")
+        return EmptyDataBackgroundView(displayImage: false)
     }
     
     // MARK: - Data Life Cycle

@@ -39,42 +39,44 @@ class MainTabViewController: UITabBarController {
         
         delegate = self
         selectedIndex = getLastViewedViewControllerIndex()
+        
+        setUpTabBarAppearance(index: selectedIndex)
     }
     
     private func createWelcomeViewController() -> UIViewController {
         let viewController = WelcomeViewController()
         
-        viewController.tabBarItem = UITabBarItem(title: "Welcome",
-                                                 image: UIImage(systemName: "circle"),
-                                                 selectedImage: UIImage(systemName: "circle.fill"))
+        viewController.tabBarItem = UITabBarItem(title: Constants.homeTitle,
+                                                 image: UIImage.image(from: Constants.home),
+                                                 selectedImage: UIImage.image(from: Constants.homeFill))
         return viewController
     }
     
     private func createWeeklyQuantitySampleTableViewController() -> UIViewController {
-        let dataTypeIdentifier = HKQuantityTypeIdentifier.stepCount.rawValue
+        let dataTypeIdentifier = HKQuantityTypeIdentifier.walkingSpeed.rawValue
         let viewController = WeeklyQuantitySampleTableViewController(dataTypeIdentifier: dataTypeIdentifier)
         
-        viewController.tabBarItem = UITabBarItem(title: "Health Data",
-                                                 image: UIImage(systemName: "triangle"),
-                                                 selectedImage: UIImage(systemName: "triangle.fill"))
+        viewController.tabBarItem = UITabBarItem(title: Constants.healthDataTitle,
+                                                 image: UIImage.image(from: Constants.healthData),
+                                                 selectedImage: UIImage.image(from: Constants.healthDataFill))
         return viewController
     }
     
     private func createChartViewController() -> UIViewController {
         let viewController = MobilityChartDataViewController()
         
-        viewController.tabBarItem = UITabBarItem(title: "Charts",
-                                                 image: UIImage(systemName: "square"),
-                                                 selectedImage: UIImage(systemName: "square.fill"))
+        viewController.tabBarItem = UITabBarItem(title: Constants.chartsTitle,
+                                                 image: UIImage.image(from: Constants.charts),
+                                                 selectedImage: UIImage.image(from: Constants.chartsFill))
         return viewController
     }
     
     private func createWeeklyReportViewController() -> UIViewController {
         let viewController = WeeklyReportTableViewController()
         
-        viewController.tabBarItem = UITabBarItem(title: "Weekly Report",
-                                                 image: UIImage(systemName: "star"),
-                                                 selectedImage: UIImage(systemName: "star.fill"))
+        viewController.tabBarItem = UITabBarItem(title: Constants.reportsTitle,
+                                                 image: UIImage.image(from: Constants.reports),
+                                                 selectedImage: UIImage.image(from: Constants.reportsFill))
         return viewController
     }
     
@@ -90,6 +92,23 @@ class MainTabViewController: UITabBarController {
         
         return 0 // Default to first view controller.
     }
+    
+    func setUpTabBarAppearance(index: Int) {
+        tabBar.tintColor = Constants.mossGreenColor
+        tabBar.layer.borderWidth = 0.50
+        tabBar.layer.borderColor = UIColor.clear.cgColor
+        tabBar.clipsToBounds = true
+        tabBar.unselectedItemTintColor = Constants.mossGreenColor
+        tabBar.isTranslucent = false
+        
+        if index == 0 {
+            tabBar.barTintColor = .white
+        } else if index == 1 || index == 3 {
+            tabBar.barTintColor = Constants.greenColor
+        } else if index == 2 {
+            tabBar.barTintColor = Constants.purpleColor
+        }
+    }
 }
 
 // MARK: - UITabBarControllerDelegate
@@ -102,5 +121,6 @@ extension MainTabViewController: UITabBarControllerDelegate {
     
     private func setLastViewedViewControllerIndex(_ index: Int) {
         userDefaults.set(index, forKey: Self.lastViewControllerViewed)
+        setUpTabBarAppearance(index: index)
     }
 }

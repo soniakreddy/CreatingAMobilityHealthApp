@@ -55,6 +55,8 @@ private func preferredUnit(for identifier: String, sampleType: HKSampleType? = n
             unit = .count()
         case .distanceWalkingRunning, .sixMinuteWalkTestDistance:
             unit = .meter()
+        case .walkingSpeed:
+            unit = .meter().unitDivided(by: .second())
         default:
             break
         }
@@ -82,13 +84,30 @@ func createAnchorDate() -> Date {
 
 /// This is commonly used for date intervals so that we get the last seven days worth of data,
 /// because we assume today (`Date()`) is providing data as well.
-func getLastWeekStartDate(from date: Date = Date()) -> Date {
-    return Calendar.current.date(byAdding: .day, value: -6, to: date)!
+
+func getStartDate(from date: Date = Date(), chartType: ChartType = .weekly) -> Date {
+    switch chartType {
+    case .daily:
+        return Calendar.current.date(byAdding: .day, value: -1, to: date) ?? Constants.today
+    case .weekly:
+        return Calendar.current.date(byAdding: .day, value: -6, to: date) ?? Constants.today
+    case .monthly, .quarterly:
+        return Calendar.current.date(byAdding: .month, value: -1, to: date) ?? Constants.today
+    }
 }
 
-func createLastWeekPredicate(from endDate: Date = Date()) -> NSPredicate {
-    let startDate = getLastWeekStartDate(from: endDate)
-    return HKQuery.predicateForSamples(withStart: startDate, end: endDate)
+func createLastDateComponentPredicate(from endDate: Date = Date(), chartType: ChartType = .weekly) -> NSPredicate {
+    var startDate = Date()
+    switch chartType {
+    case .daily:
+        startDate = getStartDate(from: endDate, chartType: .daily)
+    case .weekly:
+        startDate = getStartDate(from: endDate, chartType: .weekly)
+    case .monthly, .quarterly:
+        startDate = getStartDate(from: endDate, chartType: .monthly)
+    }
+    
+    return HKQuery.predicateForSamples(withStart: startDate, end: endDate, options: .strictStartDate)
 }
 
 /// Return the most preferred `HKStatisticsOptions` for a data type identifier. Defaults to `.discreteAverage`.
